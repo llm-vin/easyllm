@@ -123,8 +123,8 @@ NPM_TOKEN=your_npm_token          # Required: for publishing
 
 Status badges can be added to the README once the GitHub repository is created:
 
-- **CI Status**: `[![CI](https://github.com/username/easyllm/actions/workflows/ci.yml/badge.svg)](https://github.com/username/easyllm/actions/workflows/ci.yml)`
-- **NPM Version**: `[![npm version](https://badge.fury.io/js/easyllm.svg)](https://badge.fury.io/js/easyllm)`
+- **CI Status**: `[![CI](https://github.com/llm-vin/easyllm/actions/workflows/ci.yml/badge.svg)](https://github.com/llm-vin/easyllm/actions/workflows/ci.yml)`
+- **NPM Version**: `[![npm version](https://badge.fury.io/js/@llmvin/easyllm.svg)](https://badge.fury.io/js/@llmvin/easyllm)`
 
 ## 🔧 Local Development
 

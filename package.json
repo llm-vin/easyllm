@@ -29,7 +29,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/railendemoss/easyllm"
+    "url": "https://github.com/llm-vin/easyllm"
   },
   "files": [
     "dist/**/*.js",
