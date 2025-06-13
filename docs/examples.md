@@ -3,7 +3,7 @@
 ## Basic Chat Completion
 
 ```typescript
-import EasyLLM from 'easyllm';
+import EasyLLM from '@llmvin/easyllm';
 
 const client = new EasyLLM({
   apiKey: process.env.LLM_VIN_API_KEY!
@@ -141,7 +141,7 @@ async function cancellableStreaming() {
 
 ### Weather Function
 ```typescript
-import EasyLLM from 'easyllm';
+import EasyLLM from '@llmvin/easyllm';
 
 const client = new EasyLLM({
   apiKey: process.env.LLM_VIN_API_KEY!

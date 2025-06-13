@@ -13,13 +13,13 @@ A unified TypeScript/JavaScript SDK for OpenAI-compatible LLM APIs, including ll
 ## Installation
 
 ```bash
-npm install easyllm
+npm install @llmvin/easyllm
 ```
 
 ## Quick Start
 
 ```typescript
-import EasyLLM from 'easyllm';
+import EasyLLM from '@llmvin/easyllm';
 
 const client = new EasyLLM({
   apiKey: 'your-api-key'

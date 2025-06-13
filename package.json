@@ -1,6 +1,6 @@
 {
-  "name": "easyllm",
-  "version": "1.0.0",
+  "name": "@llmvin/easyllm",
+  "version": "0.0.1",
   "description": "A unified SDK for OpenAI-compatible LLM APIs including llm.vin and others",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -32,7 +32,11 @@
     "url": "https://github.com/railendemoss/easyllm"
   },
   "files": [
-    "dist/**/*",
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "dist/**/*.js.map",
+    "dist/**/*.d.ts.map",
+    "!dist/**/__tests__/**",
     "README.md"
   ],
   "dependencies": {
