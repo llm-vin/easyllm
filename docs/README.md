@@ -107,6 +107,130 @@ const stream = await client.chat.completions.stream({
 });
 ```
 
+### Function Calling
+
+#### Basic Function Definition
+```typescript
+const tools = [
+  {
+    type: 'function',
+    function: {
+      name: 'get_weather',
+      description: 'Get the current weather for a location',
+      parameters: {
+        type: 'object',
+        properties: {
+          location: {
+            type: 'string',
+            description: 'The city and state, e.g. San Francisco, CA'
+          },
+          unit: {
+            type: 'string',
+            enum: ['celsius', 'fahrenheit'],
+            description: 'The temperature unit'
+          }
+        },
+        required: ['location']
+      }
+    }
+  }
+];
+
+const response = await client.chat.completions.create({
+  model: 'llama4-scout',
+  messages: [
+    { role: 'user', content: 'What is the weather like in San Francisco?' }
+  ],
+  tools,
+  tool_choice: 'auto'
+});
+
+// Check if the model wants to call a function
+if (response.choices[0].finish_reason === 'tool_calls') {
+  const toolCalls = response.choices[0].message.tool_calls;
+  console.log('Function to call:', toolCalls[0].function.name);
+  console.log('Arguments:', toolCalls[0].function.arguments);
+}
+```
+
+#### Function Calling with Streaming
+```typescript
+const stream = await client.chat.completions.stream({
+  model: 'llama4-scout',
+  messages: [{ role: 'user', content: 'Get the weather in Tokyo' }],
+  tools
+}, {
+  onProgress: (chunk) => {
+    if (chunk.choices[0].delta.tool_calls) {
+      console.log('Tool call chunk:', chunk.choices[0].delta.tool_calls);
+    }
+  }
+});
+
+for await (const chunk of stream) {
+  if (chunk.choices[0].finish_reason === 'tool_calls') {
+    console.log('Function call completed');
+  }
+}
+```
+
+#### Complete Function Calling Flow
+```typescript
+// Step 1: Initial request with function definitions
+const weatherTool = {
+  type: 'function',
+  function: {
+    name: 'get_weather',
+    description: 'Get weather information',
+    parameters: {
+      type: 'object',
+      properties: {
+        location: { type: 'string', description: 'City name' }
+      },
+      required: ['location']
+    }
+  }
+};
+
+const messages = [
+  { role: 'user', content: 'What\'s the weather in Paris?' }
+];
+
+const response1 = await client.chat.completions.create({
+  model: 'llama4-scout',
+  messages,
+  tools: [weatherTool]
+});
+
+// Step 2: Handle function call
+if (response1.choices[0].finish_reason === 'tool_calls') {
+  const toolCall = response1.choices[0].message.tool_calls[0];
+  
+  // Add assistant's function call to conversation
+  messages.push(response1.choices[0].message);
+  
+  // Execute the function (your implementation)
+  const weatherData = await getWeather(
+    JSON.parse(toolCall.function.arguments).location
+  );
+  
+  // Add function result to conversation
+  messages.push({
+    role: 'tool',
+    content: JSON.stringify(weatherData),
+    tool_call_id: toolCall.id
+  });
+  
+  // Step 3: Get final response
+  const response2 = await client.chat.completions.create({
+    model: 'llama4-scout',
+    messages
+  });
+  
+  console.log(response2.choices[0].message.content);
+}
+```
+
 ### List Models
 
 ```typescript

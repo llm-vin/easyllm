@@ -7,8 +7,11 @@ export interface EasyLLMConfig {
 }
 
 export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string | null;
+  name?: string;
+  tool_calls?: ToolCall[];
+  tool_call_id?: string;
 }
 
 export interface ChatCompletionRequest {
@@ -20,6 +23,8 @@ export interface ChatCompletionRequest {
   frequency_penalty?: number;
   presence_penalty?: number;
   stream?: boolean;
+  tools?: Tool[];
+  tool_choice?: 'none' | 'auto' | ToolChoice;
 }
 
 export interface ChatCompletionResponse {
@@ -30,7 +35,7 @@ export interface ChatCompletionResponse {
   choices: Array<{
     index: number;
     message: ChatMessage;
-    finish_reason: string;
+    finish_reason: 'stop' | 'length' | 'tool_calls' | 'content_filter' | null;
   }>;
   usage: {
     prompt_tokens: number;
@@ -90,8 +95,9 @@ export interface ChatCompletionChunk {
     delta: {
       role?: 'assistant';
       content?: string;
+      tool_calls?: ToolCall[];
     };
-    finish_reason: string | null;
+    finish_reason: 'stop' | 'length' | 'tool_calls' | 'content_filter' | null;
   }>;
 }
 
@@ -101,3 +107,49 @@ export interface StreamOptions {
   onError?: (error: Error) => void;
   onComplete?: () => void;
 }
+
+// Function calling types
+export interface FunctionDefinition {
+  name: string;
+  description?: string;
+  parameters?: {
+    type: 'object';
+    properties: Record<string, JSONSchemaProperty>;
+    required?: string[];
+    additionalProperties?: boolean;
+  };
+}
+
+export interface JSONSchemaProperty {
+  type: 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object' | 'null';
+  description?: string;
+  enum?: (string | number)[];
+  items?: JSONSchemaProperty;
+  properties?: Record<string, JSONSchemaProperty>;
+  required?: string[];
+  additionalProperties?: boolean;
+}
+
+export interface Tool {
+  type: 'function';
+  function: FunctionDefinition;
+}
+
+export interface ToolChoice {
+  type: 'function';
+  function: {
+    name: string;
+  };
+}
+
+export interface ToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
+// Helper type for function implementations
+export type FunctionImplementation = (args: any) => any | Promise<any>;
