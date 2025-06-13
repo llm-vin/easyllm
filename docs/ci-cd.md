@@ -71,27 +71,9 @@ NPM_TOKEN=your_npm_token
 
 ## 🤖 Dependabot Configuration
 
-### Auto-dependency Updates (`.github/dependabot.yml`)
+**Status:** Disabled
 
-**NPM Dependencies:**
-- Weekly updates on Mondays at 9:00 AM
-- Maximum 10 open PRs
-- Automatic labeling and assignment
-
-**GitHub Actions:**
-- Weekly updates for workflow dependencies
-- Maximum 5 open PRs
-- Automatic security updates
-
-### Auto-merge (`.github/workflows/dependabot-auto-merge.yml`)
-
-**Purpose:** Automatically merge Dependabot PRs that pass tests
-
-**Process:**
-1. Dependabot creates PR
-2. CI runs automatically
-3. If tests pass, PR is auto-merged
-4. If tests fail, PR requires manual review
+Dependabot automatic dependency updates have been disabled for this project. Dependencies will be updated manually as needed.
 
 ## 🚀 Setting Up CI/CD for Your Fork
 
