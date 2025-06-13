@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run linter (if available)
+      run: npm run lint --if-present
+    
+    - name: Build project
+      run: npm run build
+    
+    - name: Run unit tests
+      run: npm run test:unit
+    
+    - name: Run integration tests (if API key provided)
+      env:
+        LLM_VIN_API_KEY: ${{ secrets.LLM_VIN_API_KEY }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        if [ -n "$LLM_VIN_API_KEY" ] || [ -n "$OPENAI_API_KEY" ]; then
+          echo "API keys found, running integration tests"
+          npm run test:integration
+        else
+          echo "No API keys found, skipping integration tests"
+        fi
+    
+
+  build-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Type check
+      run: npx tsc --noEmit
+    
+    - name: Build for production
+      run: npm run build
+    
+    - name: Check package.json exports
+      run: |
+        if [ -f "dist/index.js" ] && [ -f "dist/index.d.ts" ]; then
+          echo "✅ Build artifacts created successfully"
+        else
+          echo "❌ Build artifacts missing"
+          exit 1
+        fi
+
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run security audit
+      run: npm audit --audit-level=moderate
+    
+    - name: Check for known vulnerabilities
+      run: npm audit --production
