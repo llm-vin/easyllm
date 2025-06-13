@@ -236,35 +236,23 @@ describe('EasyLLM', () => {
 
       const mockResponse = {
         id: 'modr-123',
-        model: 'text-moderation-latest',
+        model: 'moderation-1',
         results: [
           {
             flagged: false,
             categories: {
-              hate: false,
-              'hate/threatening': false,
-              harassment: false,
-              'harassment/threatening': false,
-              'self-harm': false,
-              'self-harm/intent': false,
-              'self-harm/instructions': false,
               sexual: false,
-              'sexual/minors': false,
+              hate: false,
+              harassment: false,
+              'self-harm': false,
               violence: false,
-              'violence/graphic': false,
             },
             category_scores: {
-              hate: 0.1,
-              'hate/threatening': 0.05,
-              harassment: 0.1,
-              'harassment/threatening': 0.05,
-              'self-harm': 0.05,
-              'self-harm/intent': 0.05,
-              'self-harm/instructions': 0.05,
               sexual: 0.1,
-              'sexual/minors': 0.05,
+              hate: 0.05,
+              harassment: 0.1,
+              'self-harm': 0.05,
               violence: 0.1,
-              'violence/graphic': 0.05,
             },
           },
         ],
@@ -273,6 +261,137 @@ describe('EasyLLM', () => {
       mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
 
       const result = await client.createModeration(mockRequest);
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/moderations', mockRequest);
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should moderate multiple inputs', async () => {
+      const mockRequest = {
+        input: ['Text 1', 'Text 2'],
+        model: 'moderation-1',
+      };
+
+      const mockResponse = {
+        id: 'modr-456',
+        model: 'moderation-1',
+        results: [
+          {
+            flagged: false,
+            categories: {
+              sexual: false,
+              hate: false,
+              harassment: false,
+              'self-harm': false,
+              violence: false,
+            },
+            category_scores: {
+              sexual: 0.1,
+              hate: 0.05,
+              harassment: 0.1,
+              'self-harm': 0.05,
+              violence: 0.1,
+            },
+          },
+          {
+            flagged: true,
+            categories: {
+              sexual: false,
+              hate: true,
+              harassment: false,
+              'self-harm': false,
+              violence: false,
+            },
+            category_scores: {
+              sexual: 0.1,
+              hate: 0.9,
+              harassment: 0.2,
+              'self-harm': 0.05,
+              violence: 0.2,
+            },
+          },
+        ],
+      };
+
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      const result = await client.createModeration(mockRequest);
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/moderations', mockRequest);
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should moderate with images', async () => {
+      const mockRequest = {
+        input: 'Text with image',
+        model: 'moderation-1',
+        input_images: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD...'],
+      };
+
+      const mockResponse = {
+        id: 'modr-789',
+        model: 'moderation-1',
+        results: [
+          {
+            flagged: false,
+            categories: {
+              sexual: false,
+              hate: false,
+              harassment: false,
+              'self-harm': false,
+              violence: false,
+            },
+            category_scores: {
+              sexual: 0.2,
+              hate: 0.1,
+              harassment: 0.15,
+              'self-harm': 0.05,
+              violence: 0.1,
+            },
+          },
+        ],
+      };
+
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      const result = await client.createModeration(mockRequest);
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/moderations', mockRequest);
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should work with moderations.create syntax', async () => {
+      const mockRequest = {
+        input: 'Test moderation',
+      };
+
+      const mockResponse = {
+        id: 'modr-321',
+        model: 'moderation-1',
+        results: [
+          {
+            flagged: false,
+            categories: {
+              sexual: false,
+              hate: false,
+              harassment: false,
+              'self-harm': false,
+              violence: false,
+            },
+            category_scores: {
+              sexual: 0.1,
+              hate: 0.05,
+              harassment: 0.1,
+              'self-harm': 0.05,
+              violence: 0.1,
+            },
+          },
+        ],
+      };
+
+      mockAxiosInstance.post.mockResolvedValue({ data: mockResponse });
+
+      const result = await client.moderations.create(mockRequest);
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith('/moderations', mockRequest);
       expect(result).toEqual(mockResponse);

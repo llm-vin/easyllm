@@ -73,6 +73,8 @@ export interface ImageGenerationResponse {
 
 export interface ModerationRequest {
   input: string | string[];
+  model?: string;
+  input_images?: string[];
 }
 
 export interface ModerationResponse {
@@ -80,8 +82,22 @@ export interface ModerationResponse {
   model: string;
   results: Array<{
     flagged: boolean;
-    categories: Record<string, boolean>;
-    category_scores: Record<string, number>;
+    categories: {
+      sexual: boolean;
+      hate: boolean;
+      harassment: boolean;
+      'self-harm': boolean;
+      violence: boolean;
+      [key: string]: boolean;
+    };
+    category_scores: {
+      sexual: number;
+      hate: number;
+      harassment: number;
+      'self-harm': number;
+      violence: number;
+      [key: string]: number;
+    };
   }>;
 }
 

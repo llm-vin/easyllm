@@ -250,11 +250,64 @@ const image = await client.images.generate({
 
 ### Content Moderation
 
+#### Basic Text Moderation
 ```typescript
 const moderation = await client.moderations.create({
   input: 'Text to moderate'
 });
+
+console.log('Flagged:', moderation.results[0].flagged);
+console.log('Categories:', moderation.results[0].categories);
+console.log('Scores:', moderation.results[0].category_scores);
 ```
+
+#### Batch Text Moderation
+```typescript
+const moderation = await client.moderations.create({
+  input: [
+    'First text to check',
+    'Second text to check',
+    'Third text to check'
+  ],
+  model: 'moderation-1'
+});
+
+moderation.results.forEach((result, index) => {
+  console.log(`Text ${index + 1}: ${result.flagged ? 'FLAGGED' : 'SAFE'}`);
+});
+```
+
+#### Text and Image Moderation
+```typescript
+const moderation = await client.moderations.create({
+  input: 'Check this text and images',
+  model: 'moderation-1',
+  input_images: [
+    'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEA...',
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...'
+  ]
+});
+
+const result = moderation.results[0];
+if (result.flagged) {
+  const flaggedCategories = Object.entries(result.categories)
+    .filter(([_, flagged]) => flagged)
+    .map(([category]) => category);
+  console.log('Flagged for:', flaggedCategories.join(', '));
+}
+```
+
+#### Moderation Categories
+The moderation endpoint checks for these categories:
+- `sexual`: Sexual content
+- `hate`: Hate speech
+- `harassment`: Harassment
+- `self-harm`: Self-harm content
+- `violence`: Violence
+
+Each category returns:
+- A boolean flag indicating if content violates the policy
+- A confidence score between 0 and 1
 
 ## Supported Providers
 

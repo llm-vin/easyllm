@@ -49,6 +49,7 @@ async function conversation() {
 
   console.log(followUp.choices[0].message.content);
 }
+```
 
 ## Streaming Chat
 
@@ -514,6 +515,7 @@ async function generateImage() {
 
 ## Content Moderation
 
+### Basic Moderation
 ```typescript
 async function moderateContent() {
   const response = await client.moderations.create({
@@ -523,6 +525,110 @@ async function moderateContent() {
   const result = response.results[0];
   console.log('Content flagged:', result.flagged);
   console.log('Categories:', result.categories);
+  console.log('Category scores:', result.category_scores);
+}
+```
+
+### Batch Moderation
+```typescript
+async function batchModeration() {
+  const response = await client.moderations.create({
+    input: [
+      'Hello, how are you?',
+      'I hate everyone!',
+      'This is a normal message'
+    ],
+    model: 'moderation-1'
+  });
+
+  response.results.forEach((result, index) => {
+    console.log(`Text ${index + 1}: ${result.flagged ? 'FLAGGED' : 'SAFE'}`);
+    
+    if (result.flagged) {
+      const flaggedCategories = Object.entries(result.categories)
+        .filter(([_, flagged]) => flagged)
+        .map(([category]) => category);
+      console.log(`  Flagged for: ${flaggedCategories.join(', ')}`);
+    }
+  });
+}
+```
+
+### Moderation with Images
+```typescript
+async function moderateWithImages() {
+  // Convert image file to base64
+  const fs = require('fs');
+  const imageBuffer = fs.readFileSync('path/to/image.jpg');
+  const base64Image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+
+  const response = await client.moderations.create({
+    input: 'Check this image content',
+    model: 'moderation-1',
+    input_images: [base64Image]
+  });
+
+  const result = response.results[0];
+  if (result.flagged) {
+    console.log('Content flagged for:', 
+      Object.entries(result.categories)
+        .filter(([_, flagged]) => flagged)
+        .map(([category]) => category)
+        .join(', ')
+    );
+  } else {
+    console.log('Content is safe');
+  }
+}
+```
+
+### Real-time Chat Moderation
+```typescript
+async function moderatedChat() {
+  const messages = [];
+  
+  async function sendMessage(userInput: string) {
+    // First, moderate the user input
+    const moderation = await client.moderations.create({
+      input: userInput
+    });
+    
+    if (moderation.results[0].flagged) {
+      console.log('Message blocked: Content policy violation');
+      const flaggedCategories = Object.entries(moderation.results[0].categories)
+        .filter(([_, flagged]) => flagged)
+        .map(([category]) => category);
+      console.log('Flagged for:', flaggedCategories.join(', '));
+      return;
+    }
+    
+    // If moderation passes, proceed with chat
+    messages.push({ role: 'user', content: userInput });
+    
+    const response = await client.chat.completions.create({
+      model: 'llama4-scout',
+      messages
+    });
+    
+    const assistantMessage = response.choices[0].message.content;
+    
+    // Optionally moderate assistant response too
+    const assistantModeration = await client.moderations.create({
+      input: assistantMessage
+    });
+    
+    if (assistantModeration.results[0].flagged) {
+      console.log('Assistant response blocked by moderation');
+      return;
+    }
+    
+    messages.push({ role: 'assistant', content: assistantMessage });
+    console.log('Assistant:', assistantMessage);
+  }
+  
+  // Example usage
+  await sendMessage('Hello, how are you?');
+  await sendMessage('Tell me about yourself');
 }
 ```
 

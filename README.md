@@ -9,6 +9,7 @@ A unified TypeScript/JavaScript SDK for OpenAI-compatible LLM APIs, including ll
 - 🔄 **Automatic Retries**: Built-in retry logic for robust API calls
 - 🎯 **OpenAI Compatible**: Drop-in replacement for OpenAI SDK syntax
 - 🛡️ **Error Handling**: Comprehensive error handling and validation
+- 🔍 **Content Moderation**: Built-in support for text and image moderation
 
 ## Installation
 
