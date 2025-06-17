@@ -10,6 +10,7 @@ import {
   ImageGenerationResponse,
   ModerationRequest,
   ModerationResponse,
+  WebSearchOptions,
 } from './types';
 
 export class EasyLLM {
@@ -23,6 +24,12 @@ export class EasyLLM {
       timeout: 30000,
       maxRetries: 3,
       ...config,
+      webSearch: {
+        enabled: false,
+        maxResults: 5,
+        includeContent: true,
+        ...config.webSearch,
+      },
     };
 
     if (this.config.provider === 'openai') {
@@ -172,6 +179,67 @@ export class EasyLLM {
     return response.data;
   }
 
+  /**
+   * Create a chat completion with automatic web search support.
+   * This will enable webSearch if the current config allows it and the model supports it.
+   */
+  async createChatCompletionWithWebSearch(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
+    const webSearchRequest = this.enhanceRequestWithWebSearch(request);
+    return this.createChatCompletion(webSearchRequest);
+  }
+
+  /**
+   * Create a streaming chat completion with automatic web search support.
+   */
+  async createChatCompletionStreamWithWebSearch(
+    request: ChatCompletionRequest,
+    options?: StreamOptions
+  ): Promise<AsyncGenerator<ChatCompletionChunk, void, unknown>> {
+    const webSearchRequest = this.enhanceRequestWithWebSearch(request);
+    return this.createChatCompletionStream(webSearchRequest, options);
+  }
+
+  /**
+   * Enhance a chat completion request with web search if enabled
+   */
+  private enhanceRequestWithWebSearch(request: ChatCompletionRequest): ChatCompletionRequest {
+    // If web search is already explicitly set in the request, respect that
+    if (request.webSearch !== undefined) {
+      return request;
+    }
+
+    // If global web search is enabled, add it to the request
+    if (this.config.webSearch?.enabled) {
+      return {
+        ...request,
+        webSearch: true,
+      };
+    }
+
+    return request;
+  }
+
+  /**
+   * Enable or disable web search globally for this client instance
+   */
+  setWebSearchEnabled(enabled: boolean): void {
+    if (!this.config.webSearch) {
+      this.config.webSearch = {
+        enabled: false,
+        maxResults: 5,
+        includeContent: true,
+      };
+    }
+    this.config.webSearch.enabled = enabled;
+  }
+
+  /**
+   * Check if web search is currently enabled
+   */
+  isWebSearchEnabled(): boolean {
+    return this.config.webSearch?.enabled ?? false;
+  }
+
   get chat() {
     return {
       completions: {
@@ -183,6 +251,14 @@ export class EasyLLM {
         },
         stream: (request: ChatCompletionRequest, options?: StreamOptions) => 
           this.createChatCompletionStream(request, options),
+        createWithWebSearch: (request: ChatCompletionRequest) => {
+          if (request.stream) {
+            return this.createChatCompletionStreamWithWebSearch(request);
+          }
+          return this.createChatCompletionWithWebSearch(request);
+        },
+        streamWithWebSearch: (request: ChatCompletionRequest, options?: StreamOptions) => 
+          this.createChatCompletionStreamWithWebSearch(request, options),
       },
     };
   }

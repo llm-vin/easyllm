@@ -10,6 +10,8 @@ A unified TypeScript/JavaScript SDK for OpenAI-compatible LLM APIs, including ll
 - 🎯 **OpenAI Compatible**: Drop-in replacement for OpenAI SDK syntax
 - 🛡️ **Error Handling**: Comprehensive error handling and validation
 - 🔍 **Content Moderation**: Built-in support for text and image moderation
+- 🌐 **Web Search**: Built-in web search capabilities for real-time information
+- ⚡ **Streaming Support**: Real-time streaming responses with function calling
 
 ## Installation
 
@@ -34,6 +36,72 @@ const response = await client.chat.completions.create({
 });
 
 console.log(response.choices[0].message.content);
+```
+
+## Web Search
+
+EasyLLM includes built-in web search capabilities that allow AI models to access real-time information from the web.
+
+**Note:** Web search is currently supported by the `llama4-maverick` model on llm.vin.
+
+### Basic Web Search
+
+```typescript
+import EasyLLM from '@llmvin/easyllm';
+
+const client = new EasyLLM({
+  apiKey: 'your-api-key',
+  webSearch: {
+    enabled: true,
+    maxResults: 5,
+    includeContent: true
+  }
+});
+
+// Automatic web search when enabled globally
+const response = await client.chat.completions.createWithWebSearch({
+  model: 'llama4-maverick',
+  messages: [
+    { role: 'user', content: 'What are the latest developments in AI?' }
+  ]
+});
+
+// Or enable web search for specific requests
+const response2 = await client.chat.completions.create({
+  model: 'llama4-maverick',
+  messages: [
+    { role: 'user', content: 'What is the current weather in Tokyo?' }
+  ],
+  webSearch: true // Enable for this request only
+});
+```
+
+### Streaming with Web Search
+
+```typescript
+const stream = await client.chat.completions.streamWithWebSearch({
+  model: 'llama4-maverick',
+  messages: [
+    { role: 'user', content: 'Tell me about recent space missions' }
+  ]
+});
+
+for await (const chunk of stream) {
+  if (chunk.choices[0]?.delta?.content) {
+    process.stdout.write(chunk.choices[0].delta.content);
+  }
+}
+```
+
+### Dynamic Web Search Control
+
+```typescript
+// Enable/disable web search at runtime
+client.setWebSearchEnabled(true);
+console.log(client.isWebSearchEnabled()); // true
+
+client.setWebSearchEnabled(false);
+console.log(client.isWebSearchEnabled()); // false
 ```
 
 ## Supported APIs

@@ -396,6 +396,30 @@ async function forcedFunctionChoice() {
   }
 }
 
+async function builtInWebSearchExample() {
+  const client = new EasyLLM({
+    apiKey: process.env.LLM_VIN_API_KEY || 'your-api-key-here',
+    webSearch: { enabled: true }
+  });
+
+  console.log('\n🔍 Built-in Web Search Example\n');
+
+  try {
+    // Using built-in web search (no need to define custom tools)
+    const response = await client.chat.completions.createWithWebSearch({
+      model: 'llama4-maverick',
+      messages: [
+        { role: 'user', content: 'What are the latest developments in quantum computing? Please find recent news.' }
+      ]
+    });
+
+    console.log('🤖 Assistant response with web search:');
+    console.log(response.choices[0].message.content);
+  } catch (error) {
+    console.error('❌ Error:', error.message);
+  }
+}
+
 async function main() {
   console.log('🌟 EasyLLM Function Calling Examples\n');
   
@@ -410,6 +434,9 @@ async function main() {
   await new Promise(resolve => setTimeout(resolve, 1000));
   await forcedFunctionChoice();
   
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  await builtInWebSearchExample();
+  
   console.log('\n🎉 All function calling examples completed!');
 }
 
@@ -423,5 +450,6 @@ module.exports = {
   multipleFunctionCalling, 
   streamingFunctionCalls, 
   forcedFunctionChoice,
+  builtInWebSearchExample,
   functions 
 };

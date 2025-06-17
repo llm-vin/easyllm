@@ -4,6 +4,7 @@ export interface EasyLLMConfig {
   provider?: 'llm.vin' | 'openai' | 'custom';
   timeout?: number;
   maxRetries?: number;
+  webSearch?: WebSearchOptions;
 }
 
 export interface ChatMessage {
@@ -25,6 +26,7 @@ export interface ChatCompletionRequest {
   stream?: boolean;
   tools?: Tool[];
   tool_choice?: 'none' | 'auto' | ToolChoice;
+  webSearch?: boolean;
 }
 
 export interface ChatCompletionResponse {
@@ -169,3 +171,24 @@ export interface ToolCall {
 
 // Helper type for function implementations
 export type FunctionImplementation = (args: any) => any | Promise<any>;
+
+// Web search types
+export interface WebSearchResult {
+  query: string;
+  results: Array<{
+    title: string;
+    link: string;
+    snippet: string;
+  }>;
+  topResultsContent: Array<{
+    title: string;
+    link: string;
+    content: string;
+  }>;
+}
+
+export interface WebSearchOptions {
+  enabled?: boolean;
+  maxResults?: number;
+  includeContent?: boolean;
+}
