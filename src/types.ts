@@ -8,11 +8,12 @@ export interface EasyLLMConfig {
 }
 
 export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant' | 'tool';
+  role: 'system' | 'user' | 'assistant' | 'tool' | 'file';
   content: string | null;
   name?: string;
   tool_calls?: ToolCall[];
   tool_call_id?: string;
+  fileName?: string;
 }
 
 export interface ChatCompletionRequest {
@@ -191,4 +192,17 @@ export interface WebSearchOptions {
   enabled?: boolean;
   maxResults?: number;
   includeContent?: boolean;
+}
+
+// File upload types
+export interface FileMessage {
+  fileName: string;
+  content: string;
+  encoding?: 'utf-8' | 'base64';
+}
+
+export interface FileUploadOptions {
+  maxFileSize?: number; // in bytes
+  allowedExtensions?: string[];
+  encoding?: 'utf-8' | 'base64';
 }

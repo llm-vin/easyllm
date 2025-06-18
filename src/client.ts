@@ -11,6 +11,9 @@ import {
   ModerationRequest,
   ModerationResponse,
   WebSearchOptions,
+  FileMessage,
+  FileUploadOptions,
+  ChatMessage,
 } from './types';
 
 export class EasyLLM {
@@ -240,6 +243,120 @@ export class EasyLLM {
     return this.config.webSearch?.enabled ?? false;
   }
 
+  /**
+   * Create file role messages from file data
+   */
+  createFileMessages(files: FileMessage[], options?: FileUploadOptions): ChatMessage[] {
+    const defaultOptions: FileUploadOptions = {
+      maxFileSize: 10 * 1024 * 1024, // 10MB
+      encoding: 'utf-8',
+      ...options,
+    };
+
+    return files.map((file) => {
+      // Validate file size if specified
+      if (defaultOptions.maxFileSize && file.content.length > defaultOptions.maxFileSize) {
+        throw new Error(`File ${file.fileName} exceeds maximum size of ${defaultOptions.maxFileSize} bytes`);
+      }
+
+      // Validate file extension if specified
+      if (defaultOptions.allowedExtensions) {
+        const extension = file.fileName.split('.').pop()?.toLowerCase();
+        if (!extension || !defaultOptions.allowedExtensions.includes(extension)) {
+          throw new Error(`File ${file.fileName} has unsupported extension. Allowed: ${defaultOptions.allowedExtensions.join(', ')}`);
+        }
+      }
+
+      // Limit fileName to 50 characters as per API requirements
+      const truncatedFileName = file.fileName.length > 50 ? file.fileName.substring(0, 50) : file.fileName;
+
+      return {
+        role: 'file' as const,
+        content: file.content,
+        fileName: truncatedFileName,
+      };
+    });
+  }
+
+  /**
+   * Create a chat completion with file uploads
+   */
+  async createChatCompletionWithFiles(
+    request: Omit<ChatCompletionRequest, 'messages'> & { messages: ChatMessage[] },
+    files: FileMessage[],
+    options?: FileUploadOptions
+  ): Promise<ChatCompletionResponse> {
+    const fileMessages = this.createFileMessages(files, options);
+    const requestWithFiles: ChatCompletionRequest = {
+      ...request,
+      messages: [...fileMessages, ...request.messages],
+    };
+
+    return this.createChatCompletion(requestWithFiles);
+  }
+
+  /**
+   * Create a streaming chat completion with file uploads
+   */
+  async createChatCompletionStreamWithFiles(
+    request: Omit<ChatCompletionRequest, 'messages'> & { messages: ChatMessage[] },
+    files: FileMessage[],
+    streamOptions?: StreamOptions,
+    fileOptions?: FileUploadOptions
+  ): Promise<AsyncGenerator<ChatCompletionChunk, void, unknown>> {
+    const fileMessages = this.createFileMessages(files, fileOptions);
+    const requestWithFiles: ChatCompletionRequest = {
+      ...request,
+      messages: [...fileMessages, ...request.messages],
+    };
+
+    return this.createChatCompletionStream(requestWithFiles, streamOptions);
+  }
+
+  /**
+   * Helper method to read file content from different sources
+   */
+  static async readFileContent(file: File | Buffer | string, fileName?: string): Promise<FileMessage> {
+    if (typeof file === 'string') {
+      // Assume it's file content as string
+      return {
+        fileName: fileName || 'untitled.txt',
+        content: file,
+      };
+    }
+
+    if (Buffer.isBuffer(file)) {
+      // Node.js Buffer
+      return {
+        fileName: fileName || 'untitled.txt',
+        content: file.toString('utf-8'),
+      };
+    }
+
+    if (typeof File !== 'undefined' && file instanceof File) {
+      // Browser File object
+      return new Promise((resolve, reject) => {
+        if (typeof (globalThis as any).FileReader === 'undefined') {
+          reject(new Error('FileReader is not available in this environment'));
+          return;
+        }
+        
+        const FileReaderClass = (globalThis as any).FileReader;
+        const reader = new FileReaderClass();
+        reader.onload = (e: any) => {
+          resolve({
+            fileName: file.name,
+            content: e.target?.result as string,
+          });
+        };
+        reader.onerror = reject;
+        reader.readAsText(file);
+      });
+    }
+
+    throw new Error('Unsupported file type. Expected string, Buffer, or File object.');
+  }
+
   get chat() {
     return {
       completions: {
@@ -259,6 +376,17 @@ export class EasyLLM {
         },
         streamWithWebSearch: (request: ChatCompletionRequest, options?: StreamOptions) => 
           this.createChatCompletionStreamWithWebSearch(request, options),
+        createWithFiles: (
+          request: Omit<ChatCompletionRequest, 'messages'> & { messages: ChatMessage[] },
+          files: FileMessage[],
+          options?: FileUploadOptions
+        ) => this.createChatCompletionWithFiles(request, files, options),
+        streamWithFiles: (
+          request: Omit<ChatCompletionRequest, 'messages'> & { messages: ChatMessage[] },
+          files: FileMessage[],
+          streamOptions?: StreamOptions,
+          fileOptions?: FileUploadOptions
+        ) => this.createChatCompletionStreamWithFiles(request, files, streamOptions, fileOptions),
       },
     };
   }
@@ -266,6 +394,14 @@ export class EasyLLM {
   get models() {
     return {
       list: () => this.listModels(),
+    };
+  }
+
+  get files() {
+    return {
+      createMessages: (files: FileMessage[], options?: FileUploadOptions) => 
+        this.createFileMessages(files, options),
+      readContent: EasyLLM.readFileContent,
     };
   }
 

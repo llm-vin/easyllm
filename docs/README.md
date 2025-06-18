@@ -309,6 +309,166 @@ Each category returns:
 - A boolean flag indicating if content violates the policy
 - A confidence score between 0 and 1
 
+### File Upload
+
+Send file contents to AI models using the `file` role. Files are automatically formatted with XML tags for better AI parsing.
+
+#### Basic File Upload
+
+```typescript
+const files = [
+  {
+    fileName: 'main.py',
+    content: 'print("hello world")'
+  }
+];
+
+const response = await client.chat.completions.createWithFiles({
+  model: 'llama4-scout',
+  messages: [
+    { role: 'user', content: 'What does this Python script do?' }
+  ]
+}, files);
+
+console.log(response.choices[0].message.content);
+```
+
+#### Multiple File Upload
+
+```typescript
+const files = [
+  {
+    fileName: 'config.json',
+    content: '{"api_key": "secret", "debug": true}'
+  },
+  {
+    fileName: 'app.py',
+    content: 'import json\n\nwith open("config.json") as f:\n    config = json.load(f)'
+  }
+];
+
+const response = await client.chat.completions.createWithFiles({
+  model: 'llama4-scout',
+  messages: [
+    { role: 'user', content: 'Review this code for security issues' }
+  ]
+}, files);
+```
+
+#### File Upload with Validation
+
+```typescript
+const files = [
+  {
+    fileName: 'test.py',
+    content: 'print("hello")'
+  }
+];
+
+const options = {
+  maxFileSize: 1024 * 1024, // 1MB limit
+  allowedExtensions: ['py', 'js', 'ts', 'txt']
+};
+
+const response = await client.chat.completions.createWithFiles({
+  model: 'llama4-scout',
+  messages: [
+    { role: 'user', content: 'Analyze this code' }
+  ]
+}, files, options);
+```
+
+#### Reading File Content from Different Sources
+
+```typescript
+// From string content
+const fileFromString = await EasyLLM.readFileContent(
+  'console.log("hello")',
+  'script.js'
+);
+
+// From Buffer (Node.js)
+const buffer = Buffer.from('print("hello")', 'utf-8');
+const fileFromBuffer = await EasyLLM.readFileContent(buffer, 'script.py');
+
+// From File object (Browser)
+const fileInput = document.getElementById('file-input') as HTMLInputElement;
+const browserFile = fileInput.files[0];
+const fileFromBrowser = await EasyLLM.readFileContent(browserFile);
+
+// Use the files
+const response = await client.chat.completions.createWithFiles({
+  model: 'llama4-scout',
+  messages: [
+    { role: 'user', content: 'Analyze these files' }
+  ]
+}, [fileFromString, fileFromBuffer, fileFromBrowser]);
+```
+
+#### Streaming with File Upload
+
+```typescript
+const files = [
+  {
+    fileName: 'data.csv',
+    content: 'name,age\nJohn,30\nJane,25'
+  }
+];
+
+const stream = await client.chat.completions.streamWithFiles({
+  model: 'llama4-scout',
+  messages: [
+    { role: 'user', content: 'Analyze this data and provide insights' }
+  ]
+}, files);
+
+for await (const chunk of stream) {
+  const content = chunk.choices[0]?.delta?.content || '';
+  process.stdout.write(content);
+}
+```
+
+#### Using the Files Utility
+
+```typescript
+// Create file messages manually
+const fileMessages = client.files.createMessages([
+  { fileName: 'test.txt', content: 'Hello world' }
+]);
+
+// Add to regular chat completion
+const response = await client.chat.completions.create({
+  model: 'llama4-scout',
+  messages: [
+    ...fileMessages,
+    { role: 'user', content: 'What does this file contain?' }
+  ]
+});
+```
+
+#### File Role Format
+
+When you send files using the `file` role, they are automatically transformed for the AI:
+
+Input:
+```typescript
+{ role: 'file', fileName: 'example.py', content: 'print("hello")' }
+```
+
+Transformed to:
+```xml
+<file fileName="example.py">
+print("hello")
+</file>
+```
+
+**File Upload Features:**
+- Automatic XML formatting for better AI parsing
+- File name validation (limited to 50 characters)
+- Optional file size and extension validation
+- Support for multiple files in one request
+- Works with both regular and streaming completions
+
 ## Supported Providers
 
 - **llm.vin** (default): Access to multiple AI models
